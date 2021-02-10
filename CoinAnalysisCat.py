@@ -18,7 +18,8 @@ if __name__ == "__main__":
         print
         sys.exit(1)
     # default single coin-toss probability for hypothesis 0
-    p0 = 0.5
+    p0 = 0.33
+    p2 = 0.33
 
     # default single coin-toss probability for hypothesis 1
     p1 = 0.9
@@ -62,13 +63,14 @@ if __name__ == "__main__":
         sys.exit(1)
     
     Ntoss = 1
-    Npass0 = []
+    Npass_cat_2 = []
     LogLikeRatio0 = []
     Npass1 = []
     LogLikeRatio1 = []
 
     Npass_min = 1e8
     Npass_max = -1e8
+    #LLR is log-like ratio
     LLR_min = 1e8
     LLR_max = -1e8
         
@@ -76,26 +78,37 @@ if __name__ == "__main__":
         for line in ifile:
             lineVals = line.split()
             Ntoss = len(lineVals)
-            Npass = 0
+            #success counters for 0, 1, 2 "rolls" of random number generator...begin at 0
+            #will count how often each "roll" occurs
+            Npass_cat0 = 0
+            Npass_cat1 = 0
+            Npass_cat2 = 0
             LLR = 0
             for v in lineVals:
                 # += adds a number to the variable, changing the variable in the process. x=2 --> x += 5 --> x=7
-                Npass += float(v)
+                # will count # occurrences of 2 per line
+                if str(v) == str(2):
+                    Npass_cat2 += float(1)
+                if v == 1:
+                    Npass_cat1 += float(1)
+                if v == 0:
+                    Npass_cat0 += float(1)
                 # adding LLR for this toss
-                if float(v) >= 1:
+                if float(v) >= 2:
                     LLR += math.log( p1/p0 )
                 else:
                     LLR += math.log( (1.-p1)/(1.-p0) )
-
-            if Npass < Npass_min:
-                Npass_min = Npass
-            if Npass > Npass_max:
-                Npass_max = Npass
+            
+            #first four lines filter through all Npass_cat1 values that pass through the loop and finds min, max per line
+            if Npass_cat2 < Npass_min:
+                Npass_min = Npass_cat2
+            if Npass_cat2 > Npass_max:
+                Npass_max = Npass_cat2
             if LLR < LLR_min:
                 LLR_min = LLR
             if LLR > LLR_max:
                 LLR_max = LLR
-            Npass0.append(Npass)
+            Npass_cat_2.append(Npass_cat2)
             LogLikeRatio0.append(LLR)
 
     if haveH1:
@@ -125,15 +138,15 @@ if __name__ == "__main__":
                 LogLikeRatio1.append(LLR)
 
     title = str(Ntoss) +  " tosses / experiment"
-                
+    print(np.max(Npass_cat_2))            
     # make Npass figure
     plt.figure()
-    plt.hist(Npass0, Ntoss+1, density=True, facecolor='b', alpha=0.5, label="assuming $\\mathbb{H}_0$")
+    plt.hist(Npass_cat_2, Ntoss+1, density=True, facecolor='b', alpha=0.5, label="assuming $\\mathbb{H}_0$")
     if haveH1:
         plt.hist(Npass1, Ntoss+1, density=True, facecolor='g', alpha=0.7, label="assuming $\\mathbb{H}_1$")
         plt.legend()
 
-    plt.xlabel('$\\lambda = N_{pass}$')
+    plt.xlabel('$\\lambda = N_{pass}$' + ' (Incidence of 2 per line)')
     plt.ylabel('Probability')
     plt.title(title)
     plt.grid(True)
